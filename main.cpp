@@ -5,6 +5,8 @@
 #include "Ore.h"
 #include <vector>
 
+#include <SDL_ttf.h>
+
 int main(){
     printf("Hello, World!");
 
@@ -61,18 +63,39 @@ int main(){
         }
     }
 
+
+    // FONT CONFIGURATIONS.
+
+    if (TTF_Init() == -1){
+        SDL_Log("Erro ao inicializar SDL_ttf: %s", TTF_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    TTF_Font* mainFont = TTF_OpenFont("prstartk.ttf", 12);
+    SDL_Color white = {255, 255, 255};
+
+    if (!mainFont){
+        SDL_Log("Erro ao carregar a fonte: %s", TTF_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    int coins = 0;
+    int oreValue = 2;
     
 
     bool running = true;
 
     SDL_Event event;
     while (running){
+
+        std::string coinTextStr = "Coins: " + std::to_string(coins);
+
         while (SDL_PollEvent(&event)){
             if (event.type == SDL_QUIT){
                 running = false;
             }
-
-            
 
             if (event.type == SDL_MOUSEBUTTONDOWN){
                 if (event.button.button == SDL_BUTTON_LEFT){
@@ -90,13 +113,13 @@ int main(){
                         if (it->isColliding(mousePoint)){
                             std::cout << "You've broken the ore! " << ores.size() << std::endl;
                             it = ores.erase(it);
+                            coins += oreValue;
                         } else {
                             ++it;
                         }
                     }
                 }
             }
-
         }
 
         SDL_SetRenderDrawColor(renderer, 28, 28, 28, 255); // Red, Green, Blue, Alpha.
@@ -109,9 +132,23 @@ int main(){
             ore.render(renderer);
         }
 
+        SDL_Surface* coinTextSurface = TTF_RenderText_Solid(mainFont, coinTextStr.c_str(), white);
+        
+
+        SDL_Texture* coinText = SDL_CreateTextureFromSurface(renderer, coinTextSurface);
+        SDL_Rect coinTextRect = {20, 20, coinTextSurface->w, coinTextSurface->h};
+
+        SDL_RenderCopy(renderer, coinText, NULL, &coinTextRect);
+
+        SDL_FreeSurface(coinTextSurface);
+        SDL_DestroyTexture(coinText);
+
         SDL_RenderPresent(renderer);
     }
 
+    TTF_CloseFont(mainFont);
+    TTF_Quit();
+    
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
